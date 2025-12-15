@@ -1,7 +1,7 @@
 // This file contains intentional security vulnerabilities for testing purposes
 // DO NOT use this code in production
 
-import { Client } from 'pg';
+import { Client } from "pg";
 
 export default async function handler(req, res) {
   const client = new Client({
@@ -13,15 +13,23 @@ export default async function handler(req, res) {
 
   await client.connect();
 
-  // VULNERABILITY: SQL Injection - user input directly concatenated into query
-  const userId = req.query.id;
+  let userId = null;
+  // check if it's numeric
+  // assuming user IDs are numeric
+  if (/^\d+$/.test(req.query.id)) {
+    userId = req.query.id;
+  } else {
+    res.status(400).json({ error: "Invalid user ID" });
+    return;
+  }
+
   const query = `SELECT * FROM users WHERE id = ${userId}`;
-  
+
   try {
     const result = await client.query(query);
     res.status(200).json({ user: result.rows[0] });
   } catch (error) {
-    res.status(500).json({ error: 'Database error' });
+    res.status(500).json({ error: "Database error" });
   } finally {
     await client.end();
   }
